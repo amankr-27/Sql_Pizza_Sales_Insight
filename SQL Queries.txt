@@ -1,0 +1,138 @@
+--created database to import csv files from pizza_sales.zip
+CREATE DATABASE pizza_hut;
+
+
+--created tables to import big csv files (orders csv file is having data entries more than 10k)
+CREATE TABLE orders (
+order_id INT NOT NULL,
+order_date DATE NOT NULL,
+order_time TIME NOT NULL,
+PRIMARY KEY (order_id)
+); 
+
+
+--created table to import csv file order_details(Having large data set)
+CREATE TABLE order_details(
+order_details_id INT NOT NULL,
+order_id INT NOT NULL,
+pizza_id TEXT NOT NULL,
+quantity INT NOT NULL,
+PRIMARY KEY (order_details_id)
+);
+
+
+--Retrieve the total number of orders placed
+SELECT
+COUNT(order_id) AS total_orders 
+FROM orders;
+
+
+--Calculate the total revenue generated from pizza sales.
+SELECT 
+ROUND(SUM(od.quantity * p.price),2) AS total_revenue
+FROM order_details od
+JOIN pizzas p
+ON p.pizza_id = od.pizza_id
+
+
+--Identify the highest-priced pizza
+SELECT 
+pt.name, 
+p.price
+FROM pizza_types pt
+JOIN pizzas p
+ON pt.pizza_type_id = p.pizza_type_id
+ORDER BY p.price desc
+LIMIT 1;
+
+
+--Identify the most common pizza size ordered.
+SELECT
+p.size, 
+COUNT(od.order_details_id) AS order_count
+FROM order_details od
+JOIN  pizzas p
+ON od.pizza_id = p.pizza_id
+GROUP BY p.size 
+ORDER BY order_count desc;
+
+
+--List the top 5 most ordered pizza types
+--along with their quantities
+
+SELECT pt.name,
+SUM(od.quantity) AS quantity
+FROM pizza_types pt
+JOIN pizzas p
+ON pt.pizza_type_id = p.pizza_type_id
+JOIN order_details od
+ON od.pizza_id = p.pizza_id
+GROUP BY pt.name 
+ORDER BY quantity desc 
+LIMIT 5;
+
+
+--Join the necessary tables to find the total quantity of each pizza category ordered
+
+SELECT 
+pt.category,
+SUM(od.quantity) AS quantity
+FROM
+pizza_types pt
+JOIN pizzas p 
+ON pt.pizza_type_id = p.pizza_type_id
+JOIN order_details od 
+ON od.pizza_id = p.pizza_id
+GROUP BY category;
+
+
+--Determine the distribution of orders by hour of the day
+
+
+SELECT 
+HOUR(order_time) AS hour, 
+COUNT(order_id) AS order_count 
+FROM orders
+GROUP BY hour(order_time);
+
+
+--Join relevant tables to find the category-wise distribution of pizzas(How many pizzas in each category)
+SELECT
+category,
+COUNT(name) 
+FROM pizza_types 
+GROUP BY category;
+
+--Group the orders by date and calculate the average number of pizzas ordered per day
+
+SELECT
+ROUND(AVG(quantity),0) AS avg_pizza_per_day
+FROM 
+(SELECT o.order_date, 
+SUM(od.quantity) AS quantity
+FROM orders o
+JOIN order_details od
+ON o.order_id = od.order_id
+GROUP BY o.order_date) AS order_quantity;
+
+
+--Determine the top 3 most ordered pizza types based on revenue
+
+SELECT 
+pt.name , 
+SUM(od.quantity * p.price) AS revenue
+FROM
+pizza_types pt
+JOIN
+pizzas p 
+ON pt.pizza_type_id = p.pizza_type_id
+JOIN
+order_details od 
+ON od.pizza_id = p.pizza_id
+GROUP BY name 
+ORDER BY revenue desc
+LIMIT 3;
+
+
+
+
